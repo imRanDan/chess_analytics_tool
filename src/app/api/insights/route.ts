@@ -59,7 +59,11 @@ Your job: identify the 3 most important patterns that are hurting this player's 
 
 Rules:
 - Base your analysis on the actual data provided (win rates, openings, color performance, game lengths, patterns in results).
-- Be specific — reference their actual numbers and openings.
+- Use the opening stats carefully:
+  - Each opening includes overall stats and per-color stats: asWhite and asBlack.
+  - When you discuss an opening, specify the color if the weakness is color-specific (for example, "with Black in the Sicilian" instead of just "the Sicilian").
+  - Do NOT call an opening a weakness if it clearly has a strong win rate overall; in that case, either skip it or focus on other openings that are underperforming.
+- Be specific — reference their actual numbers and openings (e.g. "You score 35% with Black in the French Defense across 18 games").
 - Each resource link MUST be a real, valid URL. Use well-known resources:
   - lichess.org practice tools (e.g. https://lichess.org/practice, https://lichess.org/training/endgame, https://lichess.org/training, https://lichess.org/study)
   - lichess.org opening explorer (https://lichess.org/opening)
@@ -72,7 +76,7 @@ You MUST respond with ONLY a valid JSON array of exactly 3 objects, no markdown,
   "explanation": "2-3 sentences analyzing this pattern using the player's actual data",
   "resourceTitle": "Name of the resource",
   "resourceUrl": "https://..."
-}`;
+}`; 
 
 export async function POST(request: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {

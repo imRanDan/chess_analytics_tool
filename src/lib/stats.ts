@@ -1,12 +1,22 @@
 import type { NormalizedGame } from "./types";
 
+type ColorStats = {
+  games: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number; // 0–100
+};
+
 export interface OpeningStats {
   name: string;
   total: number;
   wins: number;
   losses: number;
   draws: number;
-  winRate: number; // 0–100
+  winRate: number; // 0–100 (overall, both colors)
+  asWhite: ColorStats;
+  asBlack: ColorStats;
 }
 
 export interface GameStats {
@@ -39,18 +49,48 @@ function buildOpeningMap(games: NormalizedGame[]): Map<string, OpeningStats> {
     const name = game.opening || "Unknown";
     let entry = map.get(name);
     if (!entry) {
-      entry = { name, total: 0, wins: 0, losses: 0, draws: 0, winRate: 0 };
+      entry = {
+        name,
+        total: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        winRate: 0,
+        asWhite: {
+          games: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          winRate: 0,
+        },
+        asBlack: {
+          games: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          winRate: 0,
+        },
+      };
       map.set(name, entry);
     }
+
     entry.total++;
     if (game.result === "Win") entry.wins++;
     else if (game.result === "Loss") entry.losses++;
     else entry.draws++;
+
+    const colorBucket = game.color === "White" ? entry.asWhite : entry.asBlack;
+    colorBucket.games++;
+    if (game.result === "Win") colorBucket.wins++;
+    else if (game.result === "Loss") colorBucket.losses++;
+    else colorBucket.draws++;
   }
 
-  // Calculate win rates
+  // Calculate win rates (overall + per-color)
   for (const entry of map.values()) {
     entry.winRate = winRate(entry.wins, entry.total);
+    entry.asWhite.winRate = winRate(entry.asWhite.wins, entry.asWhite.games);
+    entry.asBlack.winRate = winRate(entry.asBlack.wins, entry.asBlack.games);
   }
 
   return map;
