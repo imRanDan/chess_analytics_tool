@@ -2,6 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AIInsight } from "@/lib/types";
 
+// ─── Rate Limiting ──────────────────────────────────────────────────────────
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_REQUESTS_PER_WINDOW = 1;
+
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+// Clean up expired entries every 5 minutes to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitStore) {
+    if (now > entry.resetAt) {
+      rateLimitStore.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
+function getClientIp(request: NextRequest): string {
+  // Vercel sets x-forwarded-for; fall back to x-real-ip
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; retryAfterSecs: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+
+  // No previous request or window expired → allow
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, retryAfterSecs: 0 };
+  }
+
+  // Within window — check count
+  if (entry.count < MAX_REQUESTS_PER_WINDOW) {
+    entry.count++;
+    return { allowed: true, retryAfterSecs: 0 };
+  }
+
+  // Rate limited
+  const retryAfterSecs = Math.ceil((entry.resetAt - now) / 1000);
+  return { allowed: false, retryAfterSecs };
+}
+
+// ─── Claude Client ──────────────────────────────────────────────────────────
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -32,6 +79,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY is not configured" },
       { status: 500 }
+    );
+  }
+
+  // Rate limit check
+  const ip = getClientIp(request);
+  const { allowed, retryAfterSecs } = checkRateLimit(ip);
+
+  if (!allowed) {
+    const minutes = Math.ceil(retryAfterSecs / 60);
+    return NextResponse.json(
+      {
+        error: `You've already analyzed your games recently. Come back in ${minutes} minute${minutes === 1 ? "" : "s"} for fresh insights!`,
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfterSecs) },
+      }
     );
   }
 
