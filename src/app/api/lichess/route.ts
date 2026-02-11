@@ -12,31 +12,58 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Lichess API: fetch last 50 games as NDJSON with opening info and moves
-    const res = await fetch(
-      `https://lichess.org/api/games/user/${encodeURIComponent(username)}?max=50&opening=true&moves=true`,
-      {
-        headers: {
-          Accept: "application/x-ndjson",
-        },
-      }
-    );
+    const encoded = encodeURIComponent(username);
+    // Fetch games and user profile in parallel (profile has current rating)
+    const [gamesRes, userRes] = await Promise.all([
+      fetch(
+        `https://lichess.org/api/games/user/${encoded}?max=50&opening=true&moves=true`,
+        { headers: { Accept: "application/x-ndjson" } }
+      ),
+      fetch(`https://lichess.org/api/user/${encoded}`),
+    ]);
 
-    if (!res.ok) {
-      if (res.status === 404) {
+    if (!gamesRes.ok) {
+      if (gamesRes.status === 404) {
         return NextResponse.json(
           { error: `Lichess user "${username}" not found` },
           { status: 404 }
         );
       }
       return NextResponse.json(
-        { error: `Lichess API error: ${res.status}` },
-        { status: res.status }
+        { error: `Lichess API error: ${gamesRes.status}` },
+        { status: gamesRes.status }
       );
     }
 
-    const text = await res.text();
-    // NDJSON: each line is a JSON object
+    let rating: number | null = null;
+    if (userRes.ok) {
+      const user = (await userRes.json()) as {
+        perfs?: Record<
+          string,
+          { rating?: number; games?: number }
+        >;
+      };
+      const perfs = user.perfs ?? {};
+      const modes = ["rapid", "blitz", "bullet", "classical"];
+      for (const mode of modes) {
+        const p = perfs[mode];
+        if (p && typeof p.rating === "number" && (p.games ?? 0) > 0) {
+          rating = p.rating;
+          break;
+        }
+      }
+      if (rating === null) {
+        for (const mode of modes) {
+          const r = perfs[mode]?.rating;
+          if (typeof r === "number") {
+            rating = r;
+            break;
+          }
+        }
+      }
+    }
+
+    const text = await gamesRes.text();
     const rawGames = text
       .trim()
       .split("\n")
@@ -47,7 +74,11 @@ export async function GET(request: NextRequest) {
       normalizeLichessGame(game, username)
     );
 
-    return NextResponse.json({ games: normalized, source: "lichess" });
+    return NextResponse.json({
+      games: normalized,
+      source: "lichess",
+      rating,
+    });
   } catch (err) {
     console.error("Lichess fetch error:", err);
     return NextResponse.json(

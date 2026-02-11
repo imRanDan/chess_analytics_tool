@@ -59,6 +59,7 @@ Your job: identify the 3 most important patterns that are hurting this player's 
 
 Rules:
 - Base your analysis on the actual data provided (win rates, openings, color performance, game lengths, patterns in results).
+- Be color-aware: cross-reference the full game list (each game has c=White or c=Black). Identify weaknesses that are specific to one color, and always specify the color when describing a pattern (e.g. "with Black" or "as White").
 - Use the opening stats carefully:
   - Each opening includes overall stats and per-color stats: asWhite and asBlack.
   - When you discuss an opening, specify the color if the weakness is color-specific (for example, "with Black in the Sicilian" instead of just "the Sicilian").
@@ -126,7 +127,12 @@ export async function POST(request: NextRequest) {
       })
     );
 
-    const userMessage = `Here is the player's data:
+    const ratingLine =
+      stats.ratingApprox != null
+        ? `\nThe player is rated approximately ${stats.ratingApprox}. Calibrate your advice accordingly.\n`
+        : "";
+
+    const userMessage = `Here is the player's data:${ratingLine}
 
 ## Computed Statistics
 ${JSON.stringify(stats, null, 2)}

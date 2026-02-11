@@ -11,16 +11,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const headers = { "User-Agent": "ChessAnalyticsTool/1.0" };
+  const baseUrl = `https://api.chess.com/pub/player/${encodeURIComponent(username)}`;
+
   try {
-    // Step 1: Get the list of monthly archive URLs
-    const archivesRes = await fetch(
-      `https://api.chess.com/pub/player/${encodeURIComponent(username)}/games/archives`,
-      {
-        headers: {
-          "User-Agent": "ChessAnalyticsTool/1.0",
-        },
-      }
-    );
+    // Fetch archives and player stats in parallel (stats for current rating)
+    const [archivesRes, statsRes] = await Promise.all([
+      fetch(`${baseUrl}/games/archives`, { headers }),
+      fetch(`${baseUrl}/stats`, { headers }),
+    ]);
 
     if (!archivesRes.ok) {
       if (archivesRes.status === 404) {
@@ -35,11 +34,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    let rating: number | null = null;
+    if (statsRes.ok) {
+      const statsData = (await statsRes.json()) as Record<
+        string,
+        { last?: { rating?: number } }
+      >;
+      const modes = ["chess_rapid", "chess_blitz", "chess_bullet", "chess_daily"];
+      for (const mode of modes) {
+        const r = statsData[mode]?.last?.rating;
+        if (typeof r === "number") {
+          rating = r;
+          break;
+        }
+      }
+    }
+
     const archivesData = await archivesRes.json();
     const archives: string[] = archivesData.archives ?? [];
 
     if (archives.length === 0) {
-      return NextResponse.json({ games: [], source: "chess.com" });
+      return NextResponse.json({
+        games: [],
+        source: "chess.com",
+        rating,
+      });
     }
 
     // Step 2: Fetch from most recent archives until we have 50 games
@@ -51,11 +70,7 @@ export async function GET(request: NextRequest) {
     for (const archiveUrl of recentArchives) {
       if (allRawGames.length >= 50) break;
 
-      const gamesRes = await fetch(archiveUrl, {
-        headers: {
-          "User-Agent": "ChessAnalyticsTool/1.0",
-        },
-      });
+      const gamesRes = await fetch(archiveUrl, { headers });
 
       if (!gamesRes.ok) continue;
 
@@ -73,7 +88,11 @@ export async function GET(request: NextRequest) {
       normalizeChessComGame(game, username)
     );
 
-    return NextResponse.json({ games: normalized, source: "chess.com" });
+    return NextResponse.json({
+      games: normalized,
+      source: "chess.com",
+      rating,
+    });
   } catch (err) {
     console.error("Chess.com fetch error:", err);
     return NextResponse.json(

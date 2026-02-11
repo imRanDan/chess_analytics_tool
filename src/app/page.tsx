@@ -7,6 +7,7 @@ import { computeStats, type GameStats, type OpeningStats } from "@/lib/stats";
 interface FetchResult {
   games: NormalizedGame[];
   source: string;
+  rating?: number | null;
 }
 
 function ResultBadge({ result }: { result: NormalizedGame["result"] }) {
@@ -463,6 +464,10 @@ export default function Home() {
     chessComCount: number;
     lichessCount: number;
   } | null>(null);
+  const [ratings, setRatings] = useState<{
+    chessCom: number | null;
+    lichess: number | null;
+  }>({ chessCom: null, lichess: null });
 
   const [aiInsights, setAiInsights] = useState<AIInsight[] | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
@@ -503,11 +508,24 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (gameStats && combinedGames && !insightsRequested.current) {
-      insightsRequested.current = true;
-      fetchInsights(gameStats, combinedGames);
-    }
-  }, [gameStats, combinedGames, fetchInsights]);
+    if (!gameStats || !combinedGames || insightsRequested.current) return;
+    insightsRequested.current = true;
+    const chess = ratings.chessCom;
+    const lichess = ratings.lichess;
+    const ratingApprox =
+      chess != null && lichess != null
+        ? Math.round((chess + lichess) / 2)
+        : chess ?? lichess ?? null;
+    const statsWithRating: GameStats = {
+      ...gameStats,
+      ratingApprox: ratingApprox ?? undefined,
+      ratingBySource:
+        chess != null || lichess != null
+          ? { chessCom: chess ?? undefined, lichess: lichess ?? undefined }
+          : undefined,
+    };
+    fetchInsights(statsWithRating, combinedGames);
+  }, [gameStats, combinedGames, ratings, fetchInsights]);
 
   const handleFetch = async () => {
     if (!chessComUsername.trim() && !lichessUsername.trim()) {
@@ -519,6 +537,7 @@ export default function Home() {
     setError(null);
     setCombinedGames(null);
     setFetchCounts(null);
+    setRatings({ chessCom: null, lichess: null });
     setAiInsights(null);
     setInsightsError(null);
     insightsRequested.current = false;
@@ -572,6 +591,10 @@ export default function Home() {
       setFetchCounts({
         chessComCount: chessComGames.length,
         lichessCount: lichessGames.length,
+      });
+      setRatings({
+        chessCom: chessComResult?.rating ?? null,
+        lichess: lichessResult?.rating ?? null,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");

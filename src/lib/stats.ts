@@ -35,6 +35,10 @@ export interface GameStats {
   mostPlayedOpenings: OpeningStats[];
   bestOpening: OpeningStats | null;
   worstOpening: OpeningStats | null;
+  /** Approximate rating for AI calibration (set by frontend from API responses). */
+  ratingApprox?: number | null;
+  /** Per-platform ratings when available. */
+  ratingBySource?: { chessCom?: number; lichess?: number };
 }
 
 function winRate(wins: number, total: number): number {
