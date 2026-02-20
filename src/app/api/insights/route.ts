@@ -64,11 +64,12 @@ Rules:
   - Each opening includes overall stats and per-color stats: asWhite and asBlack.
   - When you discuss an opening, specify the color if the weakness is color-specific (for example, "with Black in the Sicilian" instead of just "the Sicilian").
   - Do NOT call an opening a weakness if it clearly has a strong win rate overall; in that case, either skip it or focus on other openings that are underperforming.
+- Short game analysis (≤20 moves): look at games with m ≤ 20. If the player LOST several of these short games, consider labeling that insight as "Tactical Blunders" — the player is falling for early tactics or making critical errors in the opening/early middlegame. If the player WON several short games, consider labeling it "Capitalizing on Opponent Mistakes" (a positive pattern to acknowledge but still suggest improving tactical depth). Prefer one of these labels when the data clearly supports it instead of a generic "short game length" observation.
 - Be specific — reference their actual numbers and openings (e.g. "You score 35% with Black in the French Defense across 18 games").
 - Each resource link MUST be a real, valid URL. Use well-known resources:
   - lichess.org practice tools (e.g. https://lichess.org/practice, https://lichess.org/training/endgame, https://lichess.org/training, https://lichess.org/study)
   - lichess.org opening explorer (https://lichess.org/opening)
-  - Known YouTube chess education channels: GothamChess, Daniel Naroditsky (https://www.youtube.com/@DanielNaroditsky), ChessVibes, Hanging Pawns, chess.com lessons on YouTube, etc.
+  - Known YouTube chess education channels: GothamChess, Daniel Naroditsky (https://www.youtube.com/channel/UCHP9CdeguNUI-_nBv_UXBhw), ChessVibes, Hanging Pawns, chess.com lessons on YouTube, etc.
 - Do NOT invent or hallucinate URLs. Only use URLs you are confident exist.
 
 You MUST respond with ONLY a valid JSON array of exactly 3 objects, no markdown, no code fences, no extra text. Each object must have these exact keys:

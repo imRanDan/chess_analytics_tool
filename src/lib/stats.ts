@@ -35,6 +35,8 @@ export interface GameStats {
   mostPlayedOpenings: OpeningStats[];
   bestOpening: OpeningStats | null;
   worstOpening: OpeningStats | null;
+  /** Trend: recent 25 games win rate minus older 25 games win rate. Positive = improving. */
+  winRateTrend: number | null;
   /** Approximate rating for AI calibration (set by frontend from API responses). */
   ratingApprox?: number | null;
   /** Per-platform ratings when available. */
@@ -100,7 +102,7 @@ function buildOpeningMap(games: NormalizedGame[]): Map<string, OpeningStats> {
   return map;
 }
 
-const MIN_GAMES_FOR_BEST_WORST = 2;
+const MIN_GAMES_FOR_BEST_WORST = 5;
 
 export function computeStats(games: NormalizedGame[]): GameStats {
   const totalGames = games.length;
@@ -143,9 +145,7 @@ export function computeStats(games: NormalizedGame[]): GameStats {
             ? o
             : best
         )
-      : allOpenings.length > 0
-        ? [...allOpenings].sort((a, b) => b.winRate - a.winRate)[0]
-        : null;
+      : null;
 
   const worstOpening =
     qualifiedOpenings.length > 0
@@ -155,9 +155,24 @@ export function computeStats(games: NormalizedGame[]): GameStats {
             ? o
             : worst
         )
-      : allOpenings.length > 0
-        ? [...allOpenings].sort((a, b) => a.winRate - b.winRate)[0]
-        : null;
+      : null;
+
+  // Trend: compare recent half vs older half (games are sorted newest-first)
+  let winRateTrend: number | null = null;
+  if (totalGames >= 10) {
+    const mid = Math.floor(totalGames / 2);
+    const recentHalf = games.slice(0, mid);
+    const olderHalf = games.slice(mid);
+    const recentWR = winRate(
+      recentHalf.filter((g) => g.result === "Win").length,
+      recentHalf.length
+    );
+    const olderWR = winRate(
+      olderHalf.filter((g) => g.result === "Win").length,
+      olderHalf.length
+    );
+    winRateTrend = Math.round((recentWR - olderWR) * 10) / 10;
+  }
 
   return {
     totalGames,
@@ -175,5 +190,6 @@ export function computeStats(games: NormalizedGame[]): GameStats {
     mostPlayedOpenings,
     bestOpening,
     worstOpening,
+    winRateTrend,
   };
 }

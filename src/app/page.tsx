@@ -14,7 +14,7 @@ function ResultBadge({ result }: { result: NormalizedGame["result"] }) {
   const styles = {
     Win: "bg-emerald-900/50 text-emerald-300 border-emerald-700/50",
     Loss: "bg-red-900/50 text-red-300 border-red-700/50",
-    Draw: "bg-yellow-900/50 text-yellow-300 border-yellow-700/50",
+    Draw: "bg-gray-700/40 text-gray-400 border-gray-600/50",
   };
   return (
     <span
@@ -214,11 +214,49 @@ function StatsDashboard({ stats }: { stats: GameStats }) {
           <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-1">
             Overall Win Rate
           </p>
-          <p className="text-2xl font-bold text-gray-100">
-            {stats.overallWinRate}%
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-2xl font-bold text-gray-100">
+              {stats.overallWinRate}%
+            </p>
+            {stats.winRateTrend != null && (
+              <span
+                className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-semibold ${
+                  stats.winRateTrend > 0
+                    ? "bg-emerald-900/40 text-emerald-400"
+                    : stats.winRateTrend < 0
+                      ? "bg-red-900/40 text-red-400"
+                      : "bg-gray-700/40 text-gray-400"
+                }`}
+              >
+                {stats.winRateTrend > 0 ? (
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                  </svg>
+                ) : stats.winRateTrend < 0 ? (
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                ) : (
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                  </svg>
+                )}
+                {Math.abs(stats.winRateTrend)}%
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-500 mt-1">
             {stats.wins}W / {stats.losses}L / {stats.draws}D
+            {stats.winRateTrend != null && (
+              <span className="ml-1">
+                &middot;{" "}
+                {stats.winRateTrend > 0
+                  ? "Improving"
+                  : stats.winRateTrend < 0
+                    ? "Declining"
+                    : "Stable"}
+              </span>
+            )}
           </p>
           <WinRateBar
             wins={stats.wins}
@@ -266,24 +304,40 @@ function StatsDashboard({ stats }: { stats: GameStats }) {
       </div>
 
       {/* Row 2: Best & Worst opening */}
-      {(stats.bestOpening || stats.worstOpening) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {stats.bestOpening && (
-            <OpeningHighlight
-              label="Best Performing Opening"
-              opening={stats.bestOpening}
-              accentColor="text-emerald-400"
-            />
-          )}
-          {stats.worstOpening && (
-            <OpeningHighlight
-              label="Worst Performing Opening"
-              opening={stats.worstOpening}
-              accentColor="text-red-400"
-            />
-          )}
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {stats.bestOpening ? (
+          <OpeningHighlight
+            label="Best Performing Opening"
+            opening={stats.bestOpening}
+            accentColor="text-emerald-400"
+          />
+        ) : (
+          <div className="rounded-xl border border-gray-800 bg-[#161b22] p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">
+              Best Performing Opening
+            </p>
+            <p className="text-sm text-gray-500 italic">
+              Play more games to see performance trends
+            </p>
+          </div>
+        )}
+        {stats.worstOpening ? (
+          <OpeningHighlight
+            label="Worst Performing Opening"
+            opening={stats.worstOpening}
+            accentColor="text-red-400"
+          />
+        ) : (
+          <div className="rounded-xl border border-gray-800 bg-[#161b22] p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">
+              Worst Performing Opening
+            </p>
+            <p className="text-sm text-gray-500 italic">
+              Play more games to see performance trends
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Row 3: Most played openings table */}
       {stats.mostPlayedOpenings.length > 0 && (
