@@ -10,8 +10,8 @@ export const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
 export const RANKS = [8, 7, 6, 5, 4, 3, 2, 1] as const;
 
 export const PIECE_SYMBOLS: Record<PieceColor, Record<PieceType, string>> = {
-  w: { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙" },
-  b: { K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟" },
+  w: { K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟" },
+  b: { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙" },
 };
 
 export const PIECE_NAMES: Record<PieceType, string> = {
