@@ -92,9 +92,23 @@ function BoardSquare({
 // ─── Piece in the bank (draggable from side tray) ────────────────────────────
 
 function BankPiece({ id, piece }: { id: string; piece: ChessPiece }) {
+  const isWhite = piece.color === "w";
   return (
-    <div className="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-lg bg-[#1c2333] border border-gray-700 hover:border-gray-500 transition-colors">
+    <div
+      className={`flex flex-col items-center justify-center w-12 h-14 md:w-14 md:h-16 rounded-lg border transition-colors ${
+        isWhite
+          ? "bg-gray-200/10 border-gray-500 hover:border-gray-400"
+          : "bg-gray-900/60 border-gray-700 hover:border-gray-500"
+      }`}
+    >
       <DraggablePiece id={id} piece={piece} size="sm" />
+      <span
+        className={`text-[9px] font-bold mt-0.5 ${
+          isWhite ? "text-gray-400" : "text-gray-600"
+        }`}
+      >
+        {PIECE_NAMES[piece.type]}
+      </span>
     </div>
   );
 }
@@ -154,6 +168,15 @@ export default function PiecePlacementGame() {
   const remainingBank = useMemo(
     () => bankPieces.filter((p) => !piecesOnBoard.has(p.id)),
     [bankPieces, piecesOnBoard]
+  );
+
+  const remainingWhite = useMemo(
+    () => remainingBank.filter((p) => p.color === "w"),
+    [remainingBank]
+  );
+  const remainingBlack = useMemo(
+    () => remainingBank.filter((p) => p.color === "b"),
+    [remainingBank]
   );
 
   function handleDragStart(event: DragStartEvent) {
@@ -282,17 +305,6 @@ export default function PiecePlacementGame() {
             {/* Board */}
             <div className="flex-shrink-0">
               <div className="inline-block">
-                {/* Top file labels */}
-                <div className="flex ml-6">
-                  {FILES.map((f) => (
-                    <div
-                      key={f}
-                      className="w-[clamp(40px,8vw,72px)] text-center text-xs text-gray-500 font-mono pb-1"
-                    >
-                      {f}
-                    </div>
-                  ))}
-                </div>
                 <div className="flex">
                   {/* Left rank labels */}
                   <div className="flex flex-col w-6">
@@ -317,7 +329,7 @@ export default function PiecePlacementGame() {
                       FILES.map((file) => {
                         const square = `${file}${rank}`;
                         const isLight =
-                          (FILES.indexOf(file) + rank) % 2 === 1;
+                          (FILES.indexOf(file) + rank) % 2 === 0;
                         const piece = boardState[square] ?? null;
                         return (
                           <BoardSquare
@@ -332,6 +344,17 @@ export default function PiecePlacementGame() {
                       })
                     )}
                   </div>
+                </div>
+                {/* Bottom file labels */}
+                <div className="flex ml-6">
+                  {FILES.map((f) => (
+                    <div
+                      key={f}
+                      className="w-[clamp(40px,8vw,72px)] text-center text-xs text-gray-500 font-mono pt-1"
+                    >
+                      {f}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -350,10 +373,37 @@ export default function PiecePlacementGame() {
                 </div>
                 <PieceBankDropZone>
                   {remainingBank.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {remainingBank.map((p) => (
-                        <BankPiece key={p.id} id={p.id} piece={p} />
-                      ))}
+                    <div className="space-y-3">
+                      {remainingWhite.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-block h-3 w-3 rounded-sm border border-gray-400 bg-white" />
+                            <span className="text-xs font-medium text-gray-400">
+                              White ({remainingWhite.length})
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {remainingWhite.map((p) => (
+                              <BankPiece key={p.id} id={p.id} piece={p} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {remainingBlack.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-block h-3 w-3 rounded-sm border border-gray-600 bg-gray-800" />
+                            <span className="text-xs font-medium text-gray-400">
+                              Black ({remainingBlack.length})
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {remainingBlack.map((p) => (
+                              <BankPiece key={p.id} id={p.id} piece={p} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-gray-600 text-center py-4">
