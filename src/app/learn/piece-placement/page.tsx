@@ -44,7 +44,7 @@ function DraggablePiece({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center justify-center cursor-grab active:cursor-grabbing select-none touch-none ${
+      className={`flex items-center justify-center cursor-grab active:cursor-grabbing select-none touch-none !text-white outline-none focus:outline-none ${
         isDragging ? "opacity-30" : "opacity-100"
       } ${size === "lg" ? "text-5xl md:text-6xl" : "text-3xl md:text-4xl"}`}
       style={{ lineHeight: 1 }}
@@ -78,7 +78,7 @@ function BoardSquare({
   return (
     <div
       ref={setNodeRef}
-      className={`relative aspect-square flex items-center justify-center ${bg} ${
+      className={`relative aspect-square flex items-center justify-center outline-none ${bg} ${
         isOver ? "ring-2 ring-inset ring-yellow-400" : ""
       } transition-colors`}
     >
@@ -503,9 +503,9 @@ export default function PiecePlacementGame() {
           </div>
 
           {/* Drag overlay for smooth dragging */}
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeDrag ? (
-              <div className="text-5xl md:text-6xl select-none pointer-events-none drop-shadow-lg">
+              <div className="min-w-[3rem] min-h-[3rem] flex items-center justify-center text-5xl md:text-6xl select-none pointer-events-none drop-shadow-lg outline-none !text-white">
                 {PIECE_SYMBOLS[activeDrag.piece.color][activeDrag.piece.type]}
               </div>
             ) : null}
